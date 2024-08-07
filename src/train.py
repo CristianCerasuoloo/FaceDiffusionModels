@@ -127,7 +127,7 @@ def train(model, diffuser, ema, start_epoch, epochs, lr, dataloader,
 
         one_epoch(model, diffuser, criterion, optimizer, dataloader, device, ema, ema_model)
 
-        if (epoch+1) % SAVE_PERIOD == 0:
+        if (epoch+1) % SAVE_PERIOD == 0 or epoch == epochs-1:
             labels = torch.arange(5).long().to(device)
             sampled_images = diffuser.sample(model, n=len(labels), labels=labels)
             ema_sampled_images = diffuser.sample(ema_model, n=len(labels), labels=labels)
@@ -207,8 +207,9 @@ def main():
             epoch_str = re.findall(r'epoch_\d+', args.checkpoint)[0]
             start_epoch = int(re.findall(r'\d+', epoch_str)[0])
         except:
-            raise ValueError("Unable to find starting epoch...\n \
-                  Checkpoint file name must comprise the string 'epoch_N' in order to start from epoch N")
+            start_epoch = 0
+            # raise ValueError("Unable to find starting epoch...\n \
+                #   Checkpoint file name must comprise the string 'epoch_N' in order to start from epoch N")
 
     # Show what we have loaded
     logger.info("Training set:\t{} samples".format(len(dataset)))
