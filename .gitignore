@@ -8,3 +8,8 @@ __pycache__
 *.csv
 *.zip
 *.tar.gz
+
+*/epoch/*
+*/epoch
+*.jpg
+*.pth
