@@ -127,18 +127,20 @@ def train(model, diffuser, ema, start_epoch, epochs, lr, dataloader,
 
         one_epoch(model, diffuser, criterion, optimizer, dataloader, device, ema, ema_model)
 
-        # Early stopping management
-        if epoch % SAVE_PERIOD == 0:
-            labels = torch.arange(10).long().to(device)
+        if (epoch+1) % SAVE_PERIOD == 0:
+            labels = torch.arange(5).long().to(device)
             sampled_images = diffuser.sample(model, n=len(labels), labels=labels)
             ema_sampled_images = diffuser.sample(ema_model, n=len(labels), labels=labels)
-            save_path = "../{}/epoch_{}/images".format(experiment_name, epoch)
+            save_path = "../{}/epoch_{}/images".format(experiment_name, epoch+1)
+
+            if not os.path.exists(save_path):
+                os.makedirs(save_path)
 
             plot_images(sampled_images)
-            save_images(sampled_images, os.path.join(save_path, f"{epoch}.jpg"))
-            save_images(ema_sampled_images, os.path.join(save_path, f"{epoch}_ema.jpg"))
+            save_images(sampled_images, os.path.join(save_path, f"{epoch+1}.jpg"))
+            save_images(ema_sampled_images, os.path.join(save_path, f"{epoch+1}_ema.jpg"))
 
-            checkpoint_save(experiment_name, model, ema_model, optimizer, epoch + 1)  # saving best model (+1 because the variable starts from 0)
+            checkpoint_save(experiment_name, model, ema_model, optimizer, epoch+1)
 
         if scheduler is not None:
             scheduler.step()

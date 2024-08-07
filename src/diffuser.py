@@ -9,7 +9,7 @@ from utils.logger import get_logger
 logger = get_logger()
 
 class Diffuser:
-    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size=256, device="cuda"):
+    def __init__(self, noise_steps=1000, beta_start=1e-4, beta_end=0.02, img_size=(256, 256), device="cuda"):
         self.noise_steps = noise_steps
         self.beta_start = beta_start
         self.beta_end = beta_end
@@ -18,7 +18,7 @@ class Diffuser:
         self.alpha = 1. - self.beta
         self.alpha_hat = torch.cumprod(self.alpha, dim=0)
 
-        self.img_size = img_size
+        self.img_size = img_size 
         self.device = device
 
     def prepare_noise_schedule(self):
@@ -37,7 +37,7 @@ class Diffuser:
         logger.info(f"Sampling {n} new images....")
         model.eval()
         with torch.no_grad():
-            x = torch.randn((n, 3, self.img_size, self.img_size)).to(self.device)
+            x = torch.randn((n, 3, self.img_size[0], self.img_size[1])).to(self.device)
             for i in tqdm(reversed(range(1, self.noise_steps)), position=0):
                 t = (torch.ones(n) * i).long().to(self.device)
                 predicted_noise = model(x, t, labels)
