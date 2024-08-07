@@ -37,7 +37,7 @@ def parse_args():
     # The checkpoint name must comprise the string '_epoch_N' in order to start from epoch N
     parser.add_argument('--data', dest='data',
                         help="Path to the dataset folder", default=None)
-    parser.add_argument("--checkpoint", dest="checkpoint", help="path to checkpoint to restore",
+    parser.add_argument("--checkpoint", dest="checkpoint", help="path to checkpoints folder to restore",
                         default=None, type=str)
 
     # training hyper-parameters

@@ -1,7 +1,7 @@
 import os
 import torch
 
-def checkpoint_save(experiment_name, model, ema_model, optimizer, epoch):
+def checkpoint_save(experiment_name, model, ema_model, optimizer, epoch, scheduler=None):
     """
     Save the model's state_dict to a file.
 
@@ -28,10 +28,13 @@ def checkpoint_save(experiment_name, model, ema_model, optimizer, epoch):
         torch.save(model.state_dict(), os.path.join(save_path, f"ckpt.pth"))
         torch.save(ema_model.state_dict(), os.path.join(save_path, f"ema_ckpt.pth"))
         torch.save(optimizer.state_dict(), os.path.join(save_path, f"optim.pth"))
+        # save scheduler state_dict if needed
+        if scheduler is not None:
+            torch.save(scheduler.state_dict(), os.path.join(save_path, f"scheduler.pth"))
 
 
 
-def checkpoint_load(model, path):
+def checkpoint_load(ckp_folder, model, ema_model, optimizer, scheduler=None):
     """
     Load the model's state_dict from a file.
 
@@ -40,9 +43,22 @@ def checkpoint_load(model, path):
     model : torch.nn.Module
         The model to load the state_dict into.
 
-    path : str
-        The path to the file.
+    ema_model : torch.nn.Module
+        The EMA model to load the state_dict into.
+
+    optimizer : torch.optim.Optimizer
+        The optimizer to load the state_dict into.
+
+    ckp_folder : str
+        The path to the folder containing the checkpoint files.
     """
-    checkpoint = torch.load(path, map_location=torch.device('cpu'))
-    model.backbone.load_state_dict(checkpoint['backbone_state_dict'])
-    model.head.load_state_dict(checkpoint['head_state_dict'])
+    load_path = os.path.join(ckp_folder, "checkpoints")
+    model.load_state_dict(torch.load(os.path.join(load_path, "ckpt.pth")))
+    ema_model.load_state_dict(torch.load(os.path.join(load_path, "ema_ckpt.pth")))
+    optimizer.load_state_dict(torch.load(os.path.join(load_path, "optim.pth")))
+    # load scheduler state_dict if needed
+    if scheduler is not None and os.path.exists(os.path.join(load_path, "scheduler.pth")):
+        scheduler.load_state_dict(torch.load(os.path.join(load_path, "scheduler.pth")))
+
+    return
+

@@ -95,27 +95,12 @@ def one_epoch(model, diffuser, criterion, optimizer, train_loader,
     
     return
 
-def train(model, diffuser, ema, start_epoch, epochs, lr, dataloader, 
-          criterion, device, experiment_name, scheduler=False):
+def train(model, optimizer, diffuser, ema, start_epoch, epochs, dataloader, 
+          criterion, device, experiment_name, scheduler=False, ema_model=None):
     model.train()
 
-    ema_model = model.clone()
-
-    optimizer = OPTIMIZER(
-        model.parameters(),
-        lr = lr,
-        # eps = 1e-6,
-        weight_decay=WEIGHT_DECAY,
-    )
-    if scheduler:
-        scheduler = CosineAnnealingLR(
-            optimizer, 
-            T_max = T_MAX, 
-            eta_min = ETA_MIN, 
-            verbose = True
-        )
-    else:
-        scheduler = None
+    if ema_model is None:
+        ema_model = model.clone()
 
     # training
     training_steps = 0
@@ -193,14 +178,38 @@ def main():
     dataloader = DataLoader(dataset, 
                             batch_size=args.bs, 
                             shuffle=True)
+    
+    # Show what we have loaded
+    logger.info("Training set:\t{} samples".format(len(dataset)))
+
 
     criterion = Loss(device = args.device)
+    diffuser = Diffuser(img_size=model.FINAL_RES, device=args.device)
+    ema = EMA(0.995)
+    optimizer = OPTIMIZER(
+        model.parameters(),
+        lr = args.lr,
+        # eps = 1e-6,
+        weight_decay=WEIGHT_DECAY,
+    )
+    ema_model = model.clone()
+
+    if args.sched:
+        scheduler = CosineAnnealingLR(
+            optimizer, 
+            T_max = T_MAX, 
+            eta_min = ETA_MIN, 
+            verbose = True
+        )
+    else:
+        scheduler = None
+
 
     start_epoch = 0
 
     if args.checkpoint is not None:
         logger.info("Loading checkpoint {}...".format(args.checkpoint))
-        checkpoint_load(model, args.checkpoint)
+        checkpoint_load(args.checkpoint, model, ema_model, optimizer, scheduler)
 
         # Gatherng the starting epoch from the weights
         try:
@@ -211,27 +220,23 @@ def main():
             # raise ValueError("Unable to find starting epoch...\n \
                 #   Checkpoint file name must comprise the string 'epoch_N' in order to start from epoch N")
 
-    # Show what we have loaded
-    logger.info("Training set:\t{} samples".format(len(dataset)))
 
     if args.profile:
         global profiler
         profiler = Profile()
 
-    diffuser = Diffuser(img_size=model.FINAL_RES, device=args.device)
-    ema = EMA(0.995)
 
     train(model,
+        optimizer,
         diffuser,
         ema,
         start_epoch,
         args.epochs,
-        args.lr,
         dataloader,
         criterion,
         args.device,
         experiment_name,
-        scheduler=args.sched)
+        scheduler=scheduler)
 
     logger.info("Training completed")
 
